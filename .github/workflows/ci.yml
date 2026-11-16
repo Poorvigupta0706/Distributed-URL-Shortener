@@ -4,13 +4,41 @@ name: URL Shortener CI
 on:
   push:
     branches: [ main, master ]
-
   pull_request:
     branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: url_test_db
+          POSTGRES_USER: url_admin
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U url_admin -d url_test_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=UTC
 
     steps:
       - name: Checkout repository
@@ -20,7 +48,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
 
       - name: Build and test
         run: mvn -B clean verify
