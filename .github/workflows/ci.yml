@@ -38,6 +38,7 @@ jobs:
 
     env:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
       JAVA_TOOL_OPTIONS: -Duser.timezone=UTC
 
     steps:
@@ -49,6 +50,11 @@ jobs:
         with:
           java-version: '21'
           distribution: temurin
+
+      - name: Verify required secrets
+        run: |
+          test -n "$DB_PASSWORD" || (echo "DB_PASSWORD is missing" && exit 1)
+          test -n "$JWT_SECRET" || (echo "JWT_SECRET is missing" && exit 1)
 
       - name: Build and test
         run: mvn -B clean verify
